@@ -69,6 +69,6 @@ app.post("/midtrans-callback", async (req, res) => {
   res.status(200).send("OK");
 });
 
-server.listen(3333, () => {
-  console.log("Server running on http://localhost:3333");
+server.listen(process.env.PORT, () => {
+  console.log(`Server running on port ${process.env.PORT}`);
 });
