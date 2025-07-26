@@ -2,11 +2,22 @@ const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 const bodyParser = require("body-parser");
+
+const axios = require("axios");
+
 const {
   getUserIdByCompany,
   UpdateInboxPaid,
   UpdateOrderPaid,
+  getLastInvoice,
+  listPaymentMethod,
+  getProject,
+  storeOrder,
+  storeOrderInbox,
 } = require("./model");
+const { response } = require("./response");
+const { jwtF, decodeToken } = require("./jwt");
+const { formatCurrency } = require("./config");
 
 const app = express();
 const server = http.createServer(app);
@@ -67,6 +78,148 @@ app.post("/midtrans-callback", async (req, res) => {
   }
 
   res.status(200).send("OK");
+});
+
+app.post("/order", jwtF, async (req, res) => {
+  const { project_id, payment_method, price } = req.body;
+
+  const userId = req.decoded.id;
+
+  try {
+    if (!project_id) throw new Error("Field 'project_id' is required.");
+    if (!payment_method) throw new Error("Field 'payment_method' is required.");
+    if (typeof price === "undefined" || isNaN(price))
+      throw new Error("Field 'price' is required and must be a number.");
+
+    // Get Last Invoice
+    var invoices = await getLastInvoice();
+
+    var counterNumber = 1;
+
+    if (invoices.length > 0) {
+      counterNumber = invoices[0].no + 1;
+    }
+
+    // Generate random 5-digit number
+    const randomNumber = Math.floor(Math.random() * 100000);
+    const invoice = `CAPBRIDGE-INV${counterNumber}-${String(
+      randomNumber
+    ).padStart(5, "0")}`;
+
+    // Get Project
+    var projects = await getProject(project_id);
+
+    if (projects.length == 0) throw new Error("Project not found");
+
+    var projectUserId = projects[0].user_id;
+    var projectTitle = projects[0].title;
+
+    var inboxId;
+
+    var paymentLogo;
+    var paymentName;
+    var paymentFee;
+    var paymentAccess;
+    var paymentType;
+    var paymentExpire;
+
+    if (payment_method != "billing") {
+      // Get List Payment Method
+      var paymentMethods = await listPaymentMethod(payment_method);
+
+      for (const i in paymentMethods) {
+        var paymentMethod = paymentMethods[i];
+
+        paymentLogo = paymentMethod.logo;
+        paymentName = paymentMethod.name;
+        paymentFee = paymentMethod.fee;
+      }
+
+      var dataOrder = {
+        invoice: invoice,
+        no: counterNumber,
+        project_id: project_id,
+        cut_price: price,
+        real_price: price,
+      };
+
+      const payload = {
+        channel_id: payment_method,
+        orderId: invoice,
+        amount: price,
+        app: "CAPBRIDGE",
+        callbackUrl: process.env.CALLBACK_URL,
+      };
+
+      const config = {
+        method: "POST",
+        url: process.env.PAY_MIDTRANS,
+        data: payload,
+      };
+
+      const result = await axios(config);
+
+      await storeOrder(dataOrder);
+
+      if (["4"].includes(payment_method)) {
+        paymentAccess = result.data.data.data.actions[0].url;
+        paymentType = "emoney";
+        paymentExpire = moment()
+          .tz("Asia/Jakarta")
+          .add(30, "minutes")
+          .format("YYYY-MM-DD HH:mm:ss");
+      } else {
+        paymentAccess = result.data.data.data.vaNumber;
+        paymentType = "va";
+        paymentExpire = result.data.data.expire;
+      }
+
+      var dataInboxOrder = {
+        Title: "Proyek [" + projectTitle + "]",
+        Content:
+          "Silahkan melakukan pembayaran lebih lanjut sebesar " +
+          formatCurrency(price),
+        field_1: paymentName,
+        field_2: paymentFee,
+        field_3: paymentAccess,
+        field_4: paymentExpire,
+        field_5: paymentType,
+        field_6: paymentLogo,
+        field_7: price,
+        field_8: project_id,
+        user_id: userId,
+        receiver_id: projectUserId,
+        type: "2",
+      };
+
+      const inboxIdResult = await storeOrderInbox(dataInboxOrder);
+
+      inboxId = inboxIdResult;
+    }
+
+    response(res, 200, false, "", {
+      price: price,
+      invoice: invoice,
+      payment: {
+        logo: paymentLogo,
+        name: paymentName,
+        fee: paymentFee,
+        access: paymentAccess,
+        expire: paymentExpire,
+        type: paymentType,
+      },
+      project: {
+        id: project_id,
+        title: projectTitle,
+      },
+      inbox: {
+        id: inboxId,
+      },
+    });
+  } catch (e) {
+    console.log(e);
+    response(res, 400, true, e.message);
+  }
 });
 
 server.listen(process.env.PORT, () => {
