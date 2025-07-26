@@ -146,7 +146,7 @@ app.post("/order", jwtF, async (req, res) => {
       const payload = {
         channel_id: payment_method,
         orderId: invoice,
-        amount: price,
+        amount: parseInt(price), // Don't forget to parseInt for avoid anomaly midtrans
         app: "CAPBRIDGE",
         callbackUrl: process.env.CALLBACK_URL,
       };
@@ -159,6 +159,7 @@ app.post("/order", jwtF, async (req, res) => {
 
       const result = await axios(config);
 
+      // Store Order
       await storeOrder(dataOrder);
 
       if (["4"].includes(payment_method)) {
@@ -192,6 +193,7 @@ app.post("/order", jwtF, async (req, res) => {
         type: "2",
       };
 
+      // Store Order Inbox
       const inboxIdResult = await storeOrderInbox(dataInboxOrder);
 
       inboxId = inboxIdResult;
