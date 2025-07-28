@@ -60,6 +60,8 @@ io.on("connection", (socket) => {
 app.post("/midtrans-callback", async (req, res) => {
   const data = req.body;
 
+  console.log("Callback Success Socket")
+
   if (data.status == "PAID") {
     // Get User ID
     var orders = await getUserIdByCompany(data.order_id);
