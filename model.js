@@ -127,6 +127,19 @@ module.exports = {
       });
     });
   },
+  UpdateProjectPaid: (projectId) => {
+    return new Promise((resolve, reject) => {
+      var query = `UPDATE projects SET status = 4 WHERE uid = ?`;
+
+      conn.query(query, [projectId], (e, result) => {
+        if (e) {
+          reject(new Error(e));
+        } else {
+          resolve(result);
+        }
+      });
+    });
+  },
   UpdateInboxPaid: (projectId) => {
     return new Promise((resolve, reject) => {
       var query = `UPDATE inboxes SET status = 4 WHERE field_8 = ?`;

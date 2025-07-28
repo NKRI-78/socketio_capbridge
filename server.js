@@ -14,6 +14,7 @@ const {
   getProject,
   storeOrder,
   storeOrderInbox,
+  UpdateProjectPaid,
 } = require("./model");
 const { response } = require("./response");
 const { jwtF, decodeToken } = require("./jwt");
@@ -76,6 +77,9 @@ app.post("/midtrans-callback", async (req, res) => {
 
     // Update Order "PAID"
     await UpdateOrderPaid(data.order_id);
+
+    // Update Order "PAID"
+    await UpdateProjectPaid(projectId);
 
     // Update Inbox "PAID"
     await UpdateInboxPaid(projectId);
