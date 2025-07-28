@@ -41,6 +41,10 @@ io.on("connection", (socket) => {
     console.log("Client connected without user_id");
   }
 
+  socket.on("payment-update", (data) => {
+    console.lg("payment-update", data);
+  });
+
   socket.on("disconnect", () => {
     for (const [uid, sid] of Object.entries(connectedUsers)) {
       if (sid === socket.id) {
@@ -109,7 +113,7 @@ app.post("/order", jwtF, async (req, res) => {
     // Get Project
     var projects = await getProject(project_id);
 
-    if (projects.length == 0) throw new Error("Project not found");
+    if (projects.length == 0) throw new Error("PROJECT_NOT_FOUND");
 
     var projectUserId = projects[0].user_id;
     var projectTitle = projects[0].title;
