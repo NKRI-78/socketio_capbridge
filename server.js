@@ -193,6 +193,14 @@ app.post("/order", jwtF, async (req, res) => {
         type: "2",
       };
 
+      if (projectUserId && connectedUsers[projectUserId]) {
+        const socketId = connectedUsers[projectUserId];
+        io.to(socketId).emit("payment-update", dataInboxOrder);
+        console.log(`Sent update to user ${projectUserId}`);
+      } else {
+        console.log("User not connected or user_id missing");
+      }
+
       // Store Order Inbox
       const inboxIdResult = await storeOrderInbox(dataInboxOrder);
 
