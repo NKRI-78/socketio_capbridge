@@ -99,11 +99,11 @@ app.post("/inbox-store", jwtF, async (req, res) => {
   const {
     title,
     content,
-    field1,
-    field2,
-    field3,
-    field4,
-    field5,
+    field_1,
+    field_2,
+    field_3,
+    field_4,
+    field_5,
     receiver_id,
   } = req.body;
 
@@ -122,10 +122,10 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       throw new Error("Field receiver_id is required");
     }
 
-    var field1Parse = field1;
+    var field1Parse = field_1;
 
-    if (field1 != "") {
-      field1Parse = parseInt(field1) / 2;
+    if (field_1 != "") {
+      field1Parse = parseInt(field_1) / 2;
     }
 
     var data = {
@@ -134,10 +134,10 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       user_id: userId,
       receiver_id: receiver_id,
       field1: field1Parse,
-      field2: field2,
-      field3: field3,
-      field4: field4,
-      field5: field5,
+      field2: field_2,
+      field3: field_3,
+      field4: field_4,
+      field5: field_5,
     };
 
     await StoreInbox(data);
@@ -154,10 +154,10 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       title: title,
       content: content,
       field1: field1Parse,
-      field2: field2,
-      field3: field3,
-      field4: field4,
-      field5: field5,
+      field2: field_2,
+      field3: field_3,
+      field4: field_4,
+      field5: field_5,
       user_id: userId,
       receiver_id: receiver_id,
     });
