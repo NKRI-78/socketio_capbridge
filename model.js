@@ -114,6 +114,34 @@ module.exports = {
       });
     });
   },
+  StoreInbox: (data) => {
+    return new Promise((resolve, reject) => {
+      var query = `INSERT INTO inboxes (title, content, user_id, receiver_id, field_1, field_2, field_3, field_4, field_5) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+      conn.query(
+        query,
+        [
+          data.title,
+          data.content,
+          data.user_id,
+          data.receiver_id,
+          data.field1,
+          data.field2,
+          data.field3,
+          data.field4,
+          data.field5,
+        ],
+        (e, result) => {
+          if (e) {
+            reject(new Error(e));
+          } else {
+            resolve(result);
+          }
+        }
+      );
+    });
+  },
   UpdateOrderPaid: (invoice) => {
     return new Promise((resolve, reject) => {
       var query = `UPDATE orders SET status = 4 WHERE invoice = ?`;

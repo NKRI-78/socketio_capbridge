@@ -15,6 +15,7 @@ const {
   storeOrder,
   storeOrderInbox,
   UpdateProjectPaid,
+  StoreInbox,
 } = require("./model");
 const { response } = require("./response");
 const { jwtF, decodeToken } = require("./jwt");
@@ -43,7 +44,11 @@ io.on("connection", (socket) => {
   }
 
   socket.on("payment-update", (data) => {
-    console.lg("payment-update", data);
+    console.log("payment-update", data);
+  });
+
+  socket.on("inbox-update", (data) => {
+    console.log("inbox-update", data);
   });
 
   socket.on("disconnect", () => {
@@ -60,7 +65,7 @@ io.on("connection", (socket) => {
 app.post("/midtrans-callback", async (req, res) => {
   const data = req.body;
 
-  console.log("Callback Success Socket")
+  console.log("Callback Success Socket");
 
   if (data.status == "PAID") {
     // Get User ID
@@ -88,6 +93,77 @@ app.post("/midtrans-callback", async (req, res) => {
   }
 
   res.status(200).send("OK");
+});
+
+app.post("/inbox-store", jwtF, async (req, res) => {
+  const {
+    title,
+    content,
+    field1,
+    field2,
+    field3,
+    field4,
+    field5,
+    receiver_id,
+  } = req.body;
+
+  const userId = req.decoded.id;
+
+  try {
+    if (typeof title == "undefined" || title == "") {
+      throw new Error("Field type title is required");
+    }
+
+    if (typeof content == "undefined" || content == "") {
+      throw new Error("Field content is required");
+    }
+
+    if (typeof receiver_id == "undefined" || receiver_id == "") {
+      throw new Error("Field receiver_id is required");
+    }
+
+    var field1Parse = field1;
+
+    if (field1 != "") {
+      field1Parse = parseInt(field1) / 2;
+    }
+
+    var data = {
+      title: title,
+      content: content,
+      user_id: userId,
+      receiver_id: receiver_id,
+      field1: field1Parse,
+      field2: field2,
+      field3: field3,
+      field4: field4,
+      field5: field5,
+    };
+
+    await StoreInbox(data);
+
+    if (receiver_id && connectedUsers[receiver_id]) {
+      const socketId = connectedUsers[receiver_id];
+      io.to(socketId).emit("inbox-update", data);
+      console.log(`Sent update to user ${receiver_id}`);
+    } else {
+      console.log("User not connected or user_id missing");
+    }
+
+    response(res, 200, false, "", {
+      title: title,
+      content: content,
+      field1: field1Parse,
+      field2: field2,
+      field3: field3,
+      field4: field4,
+      field5: field5,
+      user_id: userId,
+      receiver_id: receiver_id,
+    });
+  } catch (e) {
+    response(res, 400, true, e.message);
+  }
 });
 
 app.post("/order", jwtF, async (req, res) => {
