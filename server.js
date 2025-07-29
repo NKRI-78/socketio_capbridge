@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 const bodyParser = require("body-parser");
+const cors = require("cors");
 
 const axios = require("axios");
 
@@ -29,6 +30,7 @@ const io = socketIo(server, {
   },
 });
 
+app.use(cors());
 app.use(bodyParser.json());
 
 const connectedUsers = {};
