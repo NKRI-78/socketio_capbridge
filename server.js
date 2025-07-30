@@ -124,10 +124,15 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       throw new Error("Field receiver_id is required");
     }
 
-    var field1Parse = field_1;
+    let field1Parse = field_1;
 
-    if (field_1 != "") {
-      field1Parse = parseInt(field_1) / 2;
+    if (field_1 !== "") {
+      const parsed = parseInt(field_1, 10);
+      if (!isNaN(parsed)) {
+        field1Parse = parsed / 2;
+      } else {
+        field1Parse = null;
+      }
     }
 
     var data = {
