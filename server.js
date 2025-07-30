@@ -130,8 +130,6 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       const parsed = parseInt(field_1, 10);
       if (!isNaN(parsed)) {
         field1Parse = parsed / 2;
-      } else {
-        field1Parse = null;
       }
     }
 
