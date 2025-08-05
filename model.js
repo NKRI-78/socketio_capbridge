@@ -1,6 +1,73 @@
-const { conn, connPayment } = require("./config");
+const { conn, connPayment, connBot } = require("./config");
 
 module.exports = {
+  loginBotSecret: (username) => {
+    return new Promise((resolve, reject) => {
+      var query = `SELECT id, username, password, role FROM bot_users WHERE username = ?`;
+
+      connBot.query(query, [username], (e, result) => {
+        if (e) {
+          reject(new Error(e));
+        } else {
+          resolve(result);
+        }
+      });
+    });
+  },
+  askBotSecret: (data) => {
+    return new Promise((resolve, reject) => {
+      var query = `INSERT INTO bot_messages (sender_id, receiver_id, prefix, content, type) VALUES (?, ?, ?, ?, ?)`;
+
+      connBot.query(
+        query,
+        [
+          data.sender_id,
+          data.receiver_id,
+          data.prefix,
+          data.content,
+          data.type,
+        ],
+        (e, result) => {
+          if (e) {
+            reject(new Error(e));
+          } else {
+            resolve(result);
+          }
+        }
+      );
+    });
+  },
+  answerBotSecret: () => {
+    return new Promise((resolve, reject) => {
+      var query = ` SELECT
+      r.id AS request_id,
+      r.content AS request_content,
+      r.created_at AS request_time,
+      r.sender_id AS request_sender,
+      r.receiver_id AS request_receiver,
+
+      a.id AS answer_id,
+      a.content AS answer_content,
+      a.created_at AS answer_time
+    FROM bot_messages r
+    LEFT JOIN bot_messages a
+      ON a.type = 'answer'
+      AND a.receiver_id = r.sender_id
+      AND a.sender_id = r.receiver_id
+      AND a.created_at > r.created_at
+    WHERE r.type = 'request'
+    GROUP BY r.id
+    ORDER BY r.created_at DESC`;
+
+      connBot.query(query, (e, result) => {
+        if (e) {
+          reject(new Error(e));
+        } else {
+          resolve(result);
+        }
+      });
+    });
+  },
   listPaymentMethod: (id) => {
     return new Promise((resolve, reject) => {
       var query = `SELECT id, name, nameCode as name_code, logo, platform, fee FROM Channels WHERE id = ?`;

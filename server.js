@@ -2,8 +2,8 @@ const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 const bodyParser = require("body-parser");
+const jwt = require("jsonwebtoken");
 const cors = require("cors");
-
 const axios = require("axios");
 
 const {
@@ -17,10 +17,14 @@ const {
   storeOrderInbox,
   UpdateProjectPaid,
   StoreInbox,
+  loginBotSecret,
+  askBotSecret,
+  answerBotSecret,
 } = require("./model");
 const { response } = require("./response");
 const { jwtF, decodeToken } = require("./jwt");
 const { formatCurrency } = require("./config");
+const { checkPasswordEncrypt } = require("./utils");
 
 const app = express();
 const server = http.createServer(app);
@@ -62,6 +66,83 @@ io.on("connection", (socket) => {
       }
     }
   });
+});
+
+app.post("/login-bot-secret", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    if (typeof username == "undefined" || username == "")
+      throw new Error("Field username is required");
+
+    if (typeof password == "undefined" || password == "")
+      throw new Error("Field password is required");
+
+    var login = await loginBotSecret(username);
+
+    if (login.length == 0) throw new Error("User not found");
+
+    var passwordHash = await checkPasswordEncrypt(password, login[0].password);
+
+    if (!passwordHash) throw new Error("Password does't match");
+
+    var payload = {
+      id: login[0].id,
+      authorized: true,
+    };
+
+    var token = jwt.sign(payload, process.env.JWT_SECRET);
+    var refreshToken = jwt.sign(payload, process.env.JWT_SECRET);
+
+    response(res, 200, false, "", {
+      token: token,
+      refresh_token: refreshToken,
+      user: {
+        id: login[0].id,
+        name: login[0].username,
+        role: login[0].role == 1 ? "admin" : "user",
+      },
+    });
+  } catch (e) {
+    response(res, 400, true, e.message);
+  }
+});
+
+app.post("/ask-bot-secret", async (req, res) => {
+  const { sender_id, receiver_id, prefix, content, type } = req.body;
+
+  try {
+    var data = {
+      sender_id: sender_id,
+      receiver_id: receiver_id,
+      prefix: prefix,
+      content: content,
+      type: type,
+    };
+
+    await askBotSecret(data);
+
+    response(res, 200, false, "", {
+      sender_id: sender_id,
+      receiver_id: receiver_id,
+      prefix: prefix,
+      content: content,
+      type: type,
+    });
+  } catch (e) {
+    response(res, 400, true, e.message);
+  }
+});
+
+app.get("/answer-bot-secret", async (_, res) => {
+  try {
+    var answer = await answerBotSecret();
+
+    response(res, 200, false, "", {
+      answer,
+    });
+  } catch (e) {
+    response(res, 400, true, e.message);
+  }
 });
 
 app.post("/midtrans-callback", async (req, res) => {

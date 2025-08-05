@@ -18,6 +18,14 @@ const connPayment = mysql.createConnection({
   database: process.env.DB_PG,
 });
 
+const connBot = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+  database: process.env.DB_BOT,
+});
+
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -27,4 +35,4 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-module.exports = { conn, connPayment, formatCurrency };
+module.exports = { conn, connPayment, connBot, formatCurrency };
