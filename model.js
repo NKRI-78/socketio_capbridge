@@ -16,22 +16,26 @@ module.exports = {
   },
   askBotSecret: (data) => {
     return new Promise((resolve, reject) => {
-      var query = `INSERT INTO bot_messages (sender_id, receiver_id, prefix, media, content, content_type, type) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      const query = `
+      INSERT INTO bot_messages 
+        (sender_id, receiver_id, prefix, media, content, content_type, type) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
 
       connBot.query(
         query,
         [
-          data.sender_id,
-          data.receiver_id,
-          data.prefix,
-          data.media,
-          data.content,
-          data.content_type,
-          data.type,
+          data?.sender_id ?? null,
+          data?.receiver_id ?? null,
+          data?.prefix ?? null,
+          data?.media ?? null,
+          data?.content ?? null,
+          data?.content_type ?? null,
+          data?.type ?? null,
         ],
-        (e, result) => {
-          if (e) {
-            reject(new Error(e));
+        (err, result) => {
+          if (err) {
+            reject(new Error(`Query failed: ${err.message}`));
           } else {
             resolve(result);
           }
@@ -39,6 +43,7 @@ module.exports = {
       );
     });
   },
+
   answerBotSecret: () => {
     return new Promise((resolve, reject) => {
       var query = ` SELECT
@@ -49,7 +54,6 @@ module.exports = {
       r.created_at AS request_time,
       r.sender_id AS request_sender,
       r.receiver_id AS request_receiver,
-
       a.id AS answer_id,
       a.content AS answer_content,
       a.content_type AS answer_content_type,
@@ -61,9 +65,18 @@ module.exports = {
       AND a.receiver_id = r.sender_id
       AND a.sender_id = r.receiver_id
       AND a.created_at > r.created_at
+      AND NOT EXISTS (
+        SELECT 1
+        FROM bot_messages a2
+        WHERE a2.type = 'answer'
+          AND a2.receiver_id = r.sender_id
+          AND a2.sender_id = r.receiver_id
+          AND a2.created_at > r.created_at
+          AND a2.created_at < a.created_at
+      )
     WHERE r.type = 'request'
-    GROUP BY r.id
-    ORDER BY r.created_at DESC`;
+    ORDER BY r.created_at DESC;
+    `;
 
       connBot.query(query, (e, result) => {
         if (e) {
