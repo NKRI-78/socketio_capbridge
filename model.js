@@ -44,12 +44,16 @@ module.exports = {
       var query = ` SELECT
       r.id AS request_id,
       r.content AS request_content,
+      r.content_type AS request_content_type,
+      r.media AS request_media,
       r.created_at AS request_time,
       r.sender_id AS request_sender,
       r.receiver_id AS request_receiver,
 
       a.id AS answer_id,
       a.content AS answer_content,
+      a.content_type AS answer_content_type,
+      a.media AS answer_media,
       a.created_at AS answer_time
     FROM bot_messages r
     LEFT JOIN bot_messages a
