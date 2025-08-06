@@ -16,7 +16,7 @@ module.exports = {
   },
   askBotSecret: (data) => {
     return new Promise((resolve, reject) => {
-      var query = `INSERT INTO bot_messages (sender_id, receiver_id, prefix, content, type) VALUES (?, ?, ?, ?, ?)`;
+      var query = `INSERT INTO bot_messages (sender_id, receiver_id, prefix, media, content, content_type, type) VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
       connBot.query(
         query,
@@ -24,7 +24,9 @@ module.exports = {
           data.sender_id,
           data.receiver_id,
           data.prefix,
+          data.media,
           data.content,
+          data.content_type,
           data.type,
         ],
         (e, result) => {

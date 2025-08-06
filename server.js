@@ -108,14 +108,17 @@ app.post("/login-bot-secret", async (req, res) => {
 });
 
 app.post("/ask-bot-secret", async (req, res) => {
-  const { sender_id, receiver_id, prefix, content, type } = req.body;
+  const { sender_id, receiver_id, prefix, media, content, content_type, type } =
+    req.body;
 
   try {
     var data = {
       sender_id: sender_id,
       receiver_id: receiver_id,
       prefix: prefix,
+      media: media,
       content: content,
+      content_type: content_type,
       type: type,
     };
 
@@ -125,7 +128,9 @@ app.post("/ask-bot-secret", async (req, res) => {
       sender_id: sender_id,
       receiver_id: receiver_id,
       prefix: prefix,
+      media: media,
       content: content,
+      content_type: content_type,
       type: type,
     });
   } catch (e) {
