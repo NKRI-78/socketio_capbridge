@@ -192,65 +192,76 @@ app.post("/inbox-store", jwtF, async (req, res) => {
     field_3,
     field_4,
     field_5,
+    data, // can be object OR a JSON string
     receiver_id,
   } = req.body;
 
   const userId = req.decoded.id;
 
   try {
-    if (typeof title == "undefined" || title == "") {
-      throw new Error("Field type title is required");
-    }
+    if (!title) throw new Error("Field type title is required");
+    if (!content) throw new Error("Field content is required");
+    if (!receiver_id) throw new Error("Field receiver_id is required");
 
-    if (typeof content == "undefined" || content == "") {
-      throw new Error("Field content is required");
-    }
-
-    if (typeof receiver_id == "undefined" || receiver_id == "") {
-      throw new Error("Field receiver_id is required");
-    }
-
-    let field1Parse = field_1;
-
-    if (field_1 !== "") {
+    // --- normalize field_1 (divide by 2 if numeric, else keep null/empty) ---
+    let field1Parse = null;
+    if (field_1 !== "" && typeof field_1 !== "undefined") {
       const parsed = parseInt(field_1, 10);
-      if (!isNaN(parsed)) {
-        field1Parse = parsed / 2;
-      }
+      if (Number.isNaN(parsed)) throw new Error("field_1 harus berupa angka");
+      field1Parse = Math.floor(parsed / 2);
     }
 
-    var data = {
-      title: title,
-      content: content,
+    // --- normalize data: accept object or JSON string ---
+    let dataObj = null;
+    if (typeof data === "string" && data.trim() !== "") {
+      try {
+        dataObj = JSON.parse(data); // client sent stringified JSON
+      } catch {
+        throw new Error("data must be valid JSON");
+      }
+    } else if (data && typeof data === "object") {
+      dataObj = data; // client sent an object
+    }
+
+    // If your DB column is TEXT/VARCHAR -> stringify once
+    // If the column is JSON/JSONB, you can pass object with some drivers,
+    // but stringifying works everywhere.
+    const dataJsonString = dataObj ? JSON.stringify(dataObj) : null;
+
+    const dataInbox = {
+      title,
+      content,
       user_id: userId,
-      receiver_id: receiver_id,
+      receiver_id,
       field1: field1Parse,
-      field2: field_2,
-      field3: field_3,
-      field4: field_4,
-      field5: field_5,
+      field2: field_2 ?? null,
+      field3: field_3 ?? null,
+      field4: field_4 ?? null,
+      field5: field_5 ?? null,
+      data: dataJsonString, // <- STRING ready for DB
     };
 
-    await StoreInbox(data);
+    await StoreInbox(dataInbox); // make sure StoreInbox inserts this string into the column
 
+    // Send object (not the string) over socket so clients don’t have to parse
     if (receiver_id && connectedUsers[receiver_id]) {
-      const socketId = connectedUsers[receiver_id];
-      io.to(socketId).emit("inbox-update", data);
+      io.to(connectedUsers[receiver_id]).emit("inbox-update", dataObj);
       console.log(`Sent update to user ${receiver_id}`);
     } else {
       console.log("User not connected or user_id missing");
     }
 
     response(res, 200, false, "", {
-      title: title,
-      content: content,
+      title,
+      content,
       field1: field1Parse,
       field2: field_2,
       field3: field_3,
       field4: field_4,
       field5: field_5,
+      data: dataObj, // return as object to API consumers
       user_id: userId,
-      receiver_id: receiver_id,
+      receiver_id,
     });
   } catch (e) {
     response(res, 400, true, e.message);
