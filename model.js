@@ -183,22 +183,18 @@ module.exports = {
       );
     });
   },
-  getUserIdByCompany: (invoice) => {
-    return new Promise((resolve, reject) => {
-      var query = `SELECT o.project_id, c.user_id 
-      FROM orders o
-      INNER JOIN projects p ON p.uid = o.project_id
-      INNER JOIN companies c ON c.uid = p.company_id 
-      WHERE o.invoice = ?`;
+  getUserIdByCompany: async (invoice) => {
+    const sql = `
+    SELECT o.project_id, c.user_id
+    FROM orders o
+    INNER JOIN projects  p ON p.uid = o.project_id
+    INNER JOIN companies c ON c.uid = p.company_id
+    WHERE o.invoice = ?
+  `;
 
-      conn.query(query, [invoice], (e, result) => {
-        if (e) {
-          reject(new Error(e));
-        } else {
-          resolve(result);
-        }
-      });
-    });
+    // mysql2/promise returns [rows, fields]
+    const [rows] = await conn.query(sql, [invoice]);
+    return rows;
   },
   StoreInbox: (data) => {
     return new Promise((resolve, reject) => {
