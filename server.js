@@ -214,11 +214,7 @@ app.post("/project-payment-callback", (req, res) => {
         // Get userId
         let userId = "";
         try {
-          const orders = await withTimeout(
-            getUserIdByCompany(data.order_id),
-            4000,
-            "getUserIdByCompany"
-          );
+          const orders = await getUserIdByCompany(data.order_id);
           userId = orders?.[0]?.user_id || "";
           console.warn("[userId]:", userId);
         } catch (e) {
