@@ -185,14 +185,13 @@ module.exports = {
   },
   getUserIdByCompany: async (invoice) => {
     const sql = `
-    SELECT o.project_id, c.user_id
-    FROM orders o
-    INNER JOIN projects  p ON p.uid = o.project_id
+    SELECT i.project_uid AS project_id, c.user_id
+    FROM invoices i
+    INNER JOIN projects  p ON p.uid = i.project_uid
     INNER JOIN companies c ON c.uid = p.company_id
-    WHERE o.invoice = ?
+    WHERE i.invoice = ?
   `;
 
-    // mysql2/promise returns [rows, fields]
     const [rows] = await conn.query(sql, [invoice]);
     return rows;
   },
