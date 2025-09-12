@@ -189,7 +189,7 @@ module.exports = {
     FROM invoices i
     INNER JOIN projects  p ON p.uid = i.project_uid
     INNER JOIN companies c ON c.uid = p.company_id
-    WHERE i.invoice = ?
+    WHERE i.order_id = ?
   `;
 
     const [rows] = await conn.query(sql, [invoice]);
