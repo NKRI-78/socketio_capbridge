@@ -218,7 +218,7 @@ app.post("/midtrans-callback", async (req, res) => {
   res.status(200).send("OK");
 });
 
-router.post("/project-payment-callback", async (req, res) => {
+app.post("/project-payment-callback", async (req, res) => {
   const data = req.body;
 
   console.log("Callback Success Socket");
