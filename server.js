@@ -211,58 +211,12 @@ app.post("/project-payment-callback", (req, res) => {
       if (normalizeStatus(data) === "PAID") {
         console.log("[cb] post-PAID side-effects start");
 
-        // Get userId
-        let userId = "";
-        try {
-          const orders = await withTimeout(
-            getUserIdByCompany(data.order_id),
-            4000,
-            "getUserIdByCompany"
-          );
-          userId = orders?.[0]?.user_id || "";
-          console.log("[cb]: userId", userId);
-        } catch (e) {
-          console.warn("[warn] getUserIdByCompany:", e.message);
-        }
-
-        if (userId && global.connectedUsers?.[userId]) {
+        if (userId && connectedUsers?.[userId]) {
           const socketId = global.connectedUsers[userId];
           io.to(socketId).emit("payment-update", data);
           console.log(`[cb] sent update to user ${userId}`);
         } else {
           console.log("[cb] user not connected or missing user_id");
-        }
-
-        try {
-          await withTimeout(
-            UpdateOrderPaid(data.order_id),
-            4000,
-            "UpdateOrderPaid"
-          );
-        } catch (e) {
-          console.warn("[warn] UpdateOrderPaid:", e.message);
-        }
-
-        const projectId = data.project_id || data.projectId;
-        if (projectId) {
-          try {
-            await withTimeout(
-              UpdateProjectPaid(projectId),
-              4000,
-              "UpdateProjectPaid"
-            );
-          } catch (e) {
-            console.warn("[warn] UpdateProjectPaid:", e.message);
-          }
-          try {
-            await withTimeout(
-              UpdateInboxPaid(projectId),
-              4000,
-              "UpdateInboxPaid"
-            );
-          } catch (e) {
-            console.warn("[warn] UpdateInboxPaid:", e.message);
-          }
         }
 
         console.log("[cb] post-PAID side-effects done");
