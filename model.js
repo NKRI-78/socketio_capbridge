@@ -195,6 +195,17 @@ module.exports = {
     const [rows] = await conn.query(sql, [invoice]);
     return rows;
   },
+  getUserIdByInvoice: async (invoice) => {
+    const sql = `
+    SELECT j.user_id
+    FROM invoices i
+    INNER JOIN jobs j ON j.id = i.investor_job_id
+    WHERE i.order_id = ?
+  `;
+
+    const [rows] = await conn.query(sql, [invoice]);
+    return rows;
+  },
   StoreInbox: (data) => {
     return new Promise((resolve, reject) => {
       const query = `

@@ -211,6 +211,20 @@ app.post("/project-payment-callback", (req, res) => {
       if (normalizeStatus(data) === "PAID") {
         console.log("[cb] post-PAID side-effects start");
 
+        // Get userId
+        let userId = "";
+        try {
+          const orders = await withTimeout(
+            getUserIdByCompany(data.order_id),
+            4000,
+            "getUserIdByCompany"
+          );
+          userId = orders?.[0]?.user_id || "";
+          console.log("[cb]: userId", userId);
+        } catch (e) {
+          console.warn("[warn] getUserIdByCompany:", e.message);
+        }
+
         if (userId && connectedUsers?.[userId]) {
           const socketId = global.connectedUsers[userId];
           io.to(socketId).emit("payment-update", data);
