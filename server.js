@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const axios = require("axios");
 
+const { conn } = require("./config");
+
 const {
   getUserIdByCompany,
   UpdateInboxPaid,
@@ -182,6 +184,163 @@ app.post("/midtrans-callback", async (req, res) => {
 
   res.status(200).send("OK");
 });
+
+app.post("/midtrans-callback", async (req, res) => {
+  const data = req.body;
+
+  console.log("Callback Success Socket");
+
+  if (data.status == "PAID") {
+    // Get User ID
+    var orders = await getUserIdByCompany(data.order_id);
+
+    const userId = orders.length == 0 ? "" : orders[0].user_id;
+    const projectId = orders.length == 0 ? "" : orders[0].project_id;
+
+    if (userId && connectedUsers[userId]) {
+      const socketId = connectedUsers[userId];
+      io.to(socketId).emit("payment-update", data);
+      console.log(`Sent update to user ${userId}`);
+    } else {
+      console.log("User not connected or user_id missing");
+    }
+
+    // Update Order "PAID"
+    await UpdateOrderPaid(data.order_id);
+
+    // Update Order "PAID"
+    await UpdateProjectPaid(projectId);
+
+    // Update Inbox "PAID"
+    await UpdateInboxPaid(projectId);
+  }
+
+  res.status(200).send("OK");
+});
+
+router.post("/project-payment-callback", async (req, res) => {
+  const data = req.body;
+
+  console.log("Callback Success Socket");
+
+  try {
+    // Jalankan core logic yang setara dengan kode Go
+    await handleProjectPaymentCallback(data);
+
+    // Tambahan: kalau status PAID, jalankan notifikasi & update lain
+    if (
+      String(data.status || "")
+        .trim()
+        .toUpperCase() === "PAID"
+    ) {
+      // Get User ID
+      const orders = await getUserIdByCompany(data.order_id);
+      const userId = orders.length === 0 ? "" : orders[0].user_id;
+
+      if (userId && global.connectedUsers?.[userId]) {
+        const socketId = global.connectedUsers[userId];
+        io.to(socketId).emit("payment-update", data);
+        console.log(`Sent update to user ${userId}`);
+      } else {
+        console.log("User not connected or user_id missing");
+      }
+
+      // Update status lain sesuai kebutuhan bisnis kamu
+      await UpdateOrderPaid(data.order_id);
+
+      const projectId = data.project_id || data.projectId; // kalau ada di payload
+      if (projectId) {
+        await UpdateProjectPaid(projectId);
+        await UpdateInboxPaid(projectId);
+      }
+    }
+
+    // Untuk callback payment gateway, umumnya tetap kirim 200 agar tidak retried
+    res.status(200).send("OK");
+  } catch (err) {
+    console.error("midtrans-callback error:", err.message);
+    // Kamu bisa pilih balas 200 (supaya gateway tidak retry) atau 4xx untuk invalid payload.
+    // Meniru perilaku Go (banyak return nil untuk "abaikan"), kita tetap 200.
+    res.status(200).send("OK");
+  }
+});
+
+async function saveCallbackSnapshot(conn, orderId, payload) {
+  // Simpan ke invoices.raw_response.callback (opsional, aman kalau kolomnya JSON)
+  await conn.execute(
+    `UPDATE invoices
+       SET raw_response = JSON_SET(COALESCE(raw_response, JSON_OBJECT()),
+                                   '$.callback', CAST(? AS JSON))
+     WHERE provider='midtrans' AND order_id=?`,
+    [JSON.stringify(payload), orderId]
+  );
+}
+
+/**
+ * Padanan dari: func HandleProjectPaymentCallback(in *entities.Callback) error
+ * @param {object} data - payload callback dari Midtrans { order_id, status, ... }
+ * @param {import('mysql2/promise').Pool|import('mysql2/promise').Connection} conn
+ */
+async function handleProjectPaymentCallback(data, conn = pool) {
+  if (!data) throw new Error("nil payload");
+
+  const orderId = String(data.order_id || data.orderId || "").trim();
+  if (!orderId) throw new Error("order_id is required");
+
+  const status = toUpperTrim(data.status);
+
+  // Idempotent check
+  const [rows] = await conn.execute(
+    "SELECT invoice_status FROM invoices WHERE provider='midtrans' AND order_id=? LIMIT 1",
+    [orderId]
+  );
+  const invStatus = rows[0]?.invoice_status || "";
+
+  if (!invStatus) {
+    throw new Error(`invoice not found for order_id=${orderId}`);
+  }
+
+  // Sudah diproses → abaikan
+  if (invStatus === "PAID" && status === "PAID") {
+    return;
+  }
+  // Sudah bukan ISSUED (CANCELLED/EXPIRED), dan callback juga bukan PAID → abaikan
+  if (invStatus !== "ISSUED" && status !== "PAID") {
+    return;
+  }
+
+  try {
+    if (status === "PAID") {
+      await conn.execute("CALL sp_mark_invoice_paid(?,?,?)", [
+        "midtrans",
+        orderId,
+        null,
+      ]);
+    } else {
+      // Anggap selain PAID = batal/expire/failed → lepas reserve
+      await conn.execute("CALL sp_cancel_invoice(?,?,?)", [
+        "midtrans",
+        orderId,
+        status,
+      ]);
+    }
+  } catch (err) {
+    // MySQL SIGNAL (idempotent) → treat as success
+    // mysql2 biasanya punya err.errno === 1644 atau err.code === 'ER_SIGNAL_EXCEPTION'
+    if (err && (err.errno === 1644 || err.code === "ER_SIGNAL_EXCEPTION")) {
+      console.warn("[warn]", err.message);
+      return;
+    }
+    throw err;
+  }
+
+  // Opsional: simpan snapshot callback
+  try {
+    await saveCallbackSnapshot(conn, orderId, data);
+  } catch (e) {
+    console.warn("[warn] saveCallbackSnapshot:", e.message);
+  }
+}
 
 app.post("/inbox-store", jwtF, async (req, res) => {
   const {
