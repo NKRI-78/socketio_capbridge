@@ -220,6 +220,7 @@ app.post("/project-payment-callback", (req, res) => {
             "getUserIdByCompany"
           );
           userId = orders?.[0]?.user_id || "";
+          console.warn("[userId]:", userId);
         } catch (e) {
           console.warn("[warn] getUserIdByCompany:", e.message);
         }
