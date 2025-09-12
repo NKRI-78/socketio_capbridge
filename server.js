@@ -216,9 +216,9 @@ app.post("/project-payment-callback", (req, res) => {
         try {
           const orders = await getUserIdByCompany(data.order_id);
           userId = orders?.[0]?.user_id || "";
-          console.warn("[userId]:", userId);
+          console.log("[userId]:", userId);
         } catch (e) {
-          console.warn("[warn] getUserIdByCompany:", e.message);
+          console.log("[warn] getUserIdByCompany:", e.message);
         }
 
         if (userId && global.connectedUsers?.[userId]) {
