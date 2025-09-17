@@ -449,6 +449,7 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       receiver_id,
     });
   } catch (e) {
+    console.log(e)
     response(res, 400, true, e.message);
   }
 });
