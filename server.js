@@ -23,7 +23,7 @@ const {
   answerBotSecret,
 } = require("./model");
 const { response } = require("./response");
-const { jwtF, decodeToken } = require("./jwt");
+const { jwtF } = require("./jwt");
 const { formatCurrency } = require("./config");
 const { checkPasswordEncrypt } = require("./utils");
 
@@ -449,7 +449,7 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       receiver_id,
     });
   } catch (e) {
-    console.log(e)
+    console.log(e);
     response(res, 400, true, e.message);
   }
 });
