@@ -235,6 +235,39 @@ module.exports = {
     });
   },
 
+  ResetVal: (data) => {
+    return new Promise((resolve, reject) => {
+      const field_4 = data.field_4;
+      const receiver_id = data.receiver_id;
+
+      let query = "";
+      let params = [];
+
+      switch (field_4) {
+        case "ktp": {
+          query = `UPDATE ktps SET nik = NULL WHERE user_id = ?`;
+          params = [receiver_id];
+          break;
+        }
+
+        case "ktp-pic": {
+          query = `UPDATE ktps SET path = NULL WHERE user_id = ?`;
+          params = [receiver_id];
+          break;
+        }
+
+        default: {
+          return resolve({ affectedRows: 0, message: "No action for field_4" });
+        }
+      }
+
+      connCreate.query(query, params, (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+  },
+
   UpdateOrderPaid: (invoice) => {
     return new Promise((resolve, reject) => {
       var query = `UPDATE orders SET status = 4 WHERE invoice = ?`;
