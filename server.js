@@ -1,11 +1,11 @@
-const express = require("express");
-const http = require("http");
-const socketIo = require("socket.io");
-const bodyParser = require("body-parser");
-const jwt = require("jsonwebtoken");
-const cors = require("cors");
-const { conn } = require("./config");
-const axios = require("axios");
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+const { conn } = require('./config');
+const axios = require('axios');
 
 const {
   getUserIdByCompany,
@@ -22,17 +22,17 @@ const {
   askBotSecret,
   answerBotSecret,
   ResetVal,
-} = require("./model");
-const { response } = require("./response");
-const { jwtF } = require("./jwt");
-const { formatCurrency } = require("./config");
-const { checkPasswordEncrypt } = require("./utils");
+} = require('./model');
+const { response } = require('./response');
+const { jwtF } = require('./jwt');
+const { formatCurrency } = require('./config');
+const { checkPasswordEncrypt } = require('./utils');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "*",
+    origin: '*',
   },
 });
 
@@ -41,25 +41,25 @@ app.use(bodyParser.json());
 
 const connectedUsers = {};
 
-io.on("connection", (socket) => {
+io.on('connection', (socket) => {
   const userId = socket.handshake.query.user_id;
 
   if (userId) {
     connectedUsers[userId] = socket.id;
     console.log(`User ${userId} connected with socket ID: ${socket.id}`);
   } else {
-    console.log("Client connected without user_id");
+    console.log('Client connected without user_id');
   }
 
-  socket.on("payment-update", (data) => {
-    console.log("payment-update", data);
+  socket.on('payment-update', (data) => {
+    console.log('payment-update', data);
   });
 
-  socket.on("inbox-update", (data) => {
-    console.log("inbox-update", data);
+  socket.on('inbox-update', (data) => {
+    console.log('inbox-update', data);
   });
 
-  socket.on("disconnect", () => {
+  socket.on('disconnect', () => {
     for (const [uid, sid] of Object.entries(connectedUsers)) {
       if (sid === socket.id) {
         delete connectedUsers[uid];
@@ -70,18 +70,18 @@ io.on("connection", (socket) => {
   });
 });
 
-app.post("/login-bot-secret", async (req, res) => {
+app.post('/login-bot-secret', async (req, res) => {
   const { username, password } = req.body;
   try {
-    if (typeof username == "undefined" || username == "")
-      throw new Error("Field username is required");
+    if (typeof username == 'undefined' || username == '')
+      throw new Error('Field username is required');
 
-    if (typeof password == "undefined" || password == "")
-      throw new Error("Field password is required");
+    if (typeof password == 'undefined' || password == '')
+      throw new Error('Field password is required');
 
     var login = await loginBotSecret(username);
 
-    if (login.length == 0) throw new Error("User not found");
+    if (login.length == 0) throw new Error('User not found');
 
     var passwordHash = await checkPasswordEncrypt(password, login[0].password);
 
@@ -95,13 +95,13 @@ app.post("/login-bot-secret", async (req, res) => {
     var token = jwt.sign(payload, process.env.JWT_SECRET);
     var refreshToken = jwt.sign(payload, process.env.JWT_SECRET);
 
-    response(res, 200, false, "", {
+    response(res, 200, false, '', {
       token: token,
       refresh_token: refreshToken,
       user: {
         id: login[0].id,
         name: login[0].username,
-        role: login[0].role == 1 ? "admin" : "user",
+        role: login[0].role == 1 ? 'admin' : 'user',
       },
     });
   } catch (e) {
@@ -109,9 +109,8 @@ app.post("/login-bot-secret", async (req, res) => {
   }
 });
 
-app.post("/ask-bot-secret", async (req, res) => {
-  const { sender_id, receiver_id, prefix, media, content, content_type, type } =
-    req.body;
+app.post('/ask-bot-secret', async (req, res) => {
+  const { sender_id, receiver_id, prefix, media, content, content_type, type } = req.body;
 
   try {
     var data = {
@@ -126,7 +125,7 @@ app.post("/ask-bot-secret", async (req, res) => {
 
     await askBotSecret(data);
 
-    response(res, 200, false, "", {
+    response(res, 200, false, '', {
       sender_id: sender_id,
       receiver_id: receiver_id,
       prefix: prefix,
@@ -140,11 +139,11 @@ app.post("/ask-bot-secret", async (req, res) => {
   }
 });
 
-app.get("/answer-bot-secret", async (_, res) => {
+app.get('/answer-bot-secret', async (_, res) => {
   try {
     var answer = await answerBotSecret();
 
-    response(res, 200, false, "", {
+    response(res, 200, false, '', {
       answer,
     });
   } catch (e) {
@@ -155,12 +154,9 @@ app.get("/answer-bot-secret", async (_, res) => {
 // ---- helpers
 const DB_TIMEOUT_MS = 5000;
 
-function withTimeout(promise, ms, label = "op") {
+function withTimeout(promise, ms, label = 'op') {
   return new Promise((resolve, reject) => {
-    const t = setTimeout(
-      () => reject(new Error(`timeout: ${label} after ${ms}ms`)),
-      ms
-    );
+    const t = setTimeout(() => reject(new Error(`timeout: ${label} after ${ms}ms`)), ms);
     promise.then(
       (v) => {
         clearTimeout(t);
@@ -169,31 +165,26 @@ function withTimeout(promise, ms, label = "op") {
       (e) => {
         clearTimeout(t);
         reject(e);
-      }
+      },
     );
   });
 }
 
 function normalizeStatus(data) {
-  const raw = String(
-    data?.status ?? data?.transaction_status ?? data?.transactionStatus ?? ""
-  )
+  const raw = String(data?.status ?? data?.transaction_status ?? data?.transactionStatus ?? '')
     .trim()
     .toUpperCase();
-  if (raw === "SETTLEMENT") return "PAID";
-  if (
-    raw === "CAPTURE" &&
-    String(data?.fraud_status || "").toUpperCase() === "ACCEPT"
-  ) {
-    return "PAID";
+  if (raw === 'SETTLEMENT') return 'PAID';
+  if (raw === 'CAPTURE' && String(data?.fraud_status || '').toUpperCase() === 'ACCEPT') {
+    return 'PAID';
   }
   return raw;
 }
 
 // ---- route: ACK FIRST, then process in background
-app.post("/project-payment-callback", (req, res) => {
+app.post('/project-payment-callback', (req, res) => {
   const data = req.body;
-  console.log("Callback Success Socket");
+  console.log('Callback Success Socket');
 
   // Respond immediately so Midtrans doesn't retry and your server never "hangs"
   res.status(200).json({ ok: true });
@@ -201,43 +192,43 @@ app.post("/project-payment-callback", (req, res) => {
   // Do the heavy work asynchronously (with timeouts and step logs)
   (async () => {
     try {
-      console.log("[cb] handle start");
+      console.log('[cb] handle start');
       await withTimeout(
         handleProjectPaymentCallback(data),
         DB_TIMEOUT_MS,
-        "handleProjectPaymentCallback"
+        'handleProjectPaymentCallback',
       );
-      console.log("[cb] core handled");
+      console.log('[cb] core handled');
 
-      if (normalizeStatus(data) === "PAID") {
-        console.log("[cb] post-PAID side-effects start");
+      if (normalizeStatus(data) === 'PAID') {
+        console.log('[cb] post-PAID side-effects start');
 
         // Get userId
-        let userId = "";
+        let userId = '';
         try {
           const orders = await withTimeout(
             getUserIdByCompany(data.order_id),
             4000,
-            "getUserIdByCompany"
+            'getUserIdByCompany',
           );
-          userId = orders?.[0]?.user_id || "";
-          console.log("[cb]: userId", userId);
+          userId = orders?.[0]?.user_id || '';
+          console.log('[cb]: userId', userId);
         } catch (e) {
-          console.warn("[warn] getUserIdByCompany:", e.message);
+          console.warn('[warn] getUserIdByCompany:', e.message);
         }
 
         if (userId && connectedUsers?.[userId]) {
           const socketId = global.connectedUsers[userId];
-          io.to(socketId).emit("payment-update", data);
+          io.to(socketId).emit('payment-update', data);
           console.log(`[cb] sent update to user ${userId}`);
         } else {
-          console.log("[cb] user not connected or missing user_id");
+          console.log('[cb] user not connected or missing user_id');
         }
 
-        console.log("[cb] post-PAID side-effects done");
+        console.log('[cb] post-PAID side-effects done');
       }
     } catch (err) {
-      console.error("[cb] processing error:", err);
+      console.error('[cb] processing error:', err);
     }
   })();
 });
@@ -251,13 +242,13 @@ async function saveCallbackSnapshot(orderId, payload) {
            SET raw_response = JSON_SET(COALESCE(raw_response, JSON_OBJECT()),
                                        '$.callback', CAST(? AS JSON))
          WHERE provider='midtrans' AND order_id=?`,
-        [JSON.stringify(payload), orderId]
+        [JSON.stringify(payload), orderId],
       ),
       4000,
-      "saveCallbackSnapshot"
+      'saveCallbackSnapshot',
     );
   } catch (e) {
-    console.warn("[warn] saveCallbackSnapshot:", e.message);
+    console.warn('[warn] saveCallbackSnapshot:', e.message);
   }
 }
 
@@ -266,94 +257,84 @@ async function saveCallbackSnapshot(orderId, payload) {
  * Throws on unexpected states; caller decides HTTP response (we ACK first).
  */
 async function handleProjectPaymentCallback(data) {
-  if (!data) throw new Error("nil payload");
+  if (!data) throw new Error('nil payload');
 
-  const orderId = String(data.order_id ?? data.orderId ?? "").trim();
-  if (!orderId) throw new Error("order_id is required");
+  const orderId = String(data.order_id ?? data.orderId ?? '').trim();
+  if (!orderId) throw new Error('order_id is required');
 
   const status = normalizeStatus(data);
 
-  console.log("[cb] select invoice");
+  console.log('[cb] select invoice');
   const [rows] = await withTimeout(
     conn.query(
       "SELECT invoice_status FROM invoices WHERE provider='midtrans' AND order_id=? LIMIT 1",
-      [orderId]
+      [orderId],
     ),
     4000,
-    "select invoice"
+    'select invoice',
   );
-  const invStatus = rows?.[0]?.invoice_status
-    ? String(rows[0].invoice_status)
-    : "";
+  const invStatus = rows?.[0]?.invoice_status ? String(rows[0].invoice_status) : '';
   if (!invStatus) throw new Error(`invoice not found for order_id=${orderId}`);
 
   // idempotent shortcuts
-  if (invStatus === "PAID" && status === "PAID") {
+  if (invStatus === 'PAID' && status === 'PAID') {
     saveCallbackSnapshot(orderId, data); // no await
-    console.log("[cb] already paid → skip");
+    console.log('[cb] already paid → skip');
     return;
   }
-  if (invStatus !== "ISSUED" && status !== "PAID") {
+  if (invStatus !== 'ISSUED' && status !== 'PAID') {
     saveCallbackSnapshot(orderId, data);
-    console.log("[cb] not ISSUED and not PAID → skip");
+    console.log('[cb] not ISSUED and not PAID → skip');
     return;
   }
 
   // apply SPs (bounded)
   try {
-    if (status === "PAID") {
-      console.log("[cb] call sp_mark_invoice_paid");
+    if (status === 'PAID') {
+      console.log('[cb] call sp_mark_invoice_paid');
       await withTimeout(
-        conn.query("CALL sp_mark_invoice_paid(?,?,?)", [
-          "midtrans",
-          orderId,
-          null,
-        ]),
+        conn.query('CALL sp_mark_invoice_paid(?,?,?)', ['midtrans', orderId, null]),
         5000,
-        "sp_mark_invoice_paid"
+        'sp_mark_invoice_paid',
       );
     } else {
-      console.log("[cb] call sp_cancel_invoice");
+      console.log('[cb] call sp_cancel_invoice');
       await withTimeout(
-        conn.query("CALL sp_cancel_invoice(?,?,?)", [
-          "midtrans",
-          orderId,
-          status,
-        ]),
+        conn.query('CALL sp_cancel_invoice(?,?,?)', ['midtrans', orderId, status]),
         5000,
-        "sp_cancel_invoice"
+        'sp_cancel_invoice',
       );
     }
   } catch (err) {
-    if (err && (err.errno === 1644 || err.code === "ER_SIGNAL_EXCEPTION")) {
-      console.warn("[warn] SIGNAL (idempotent):", err.message);
+    if (err && (err.errno === 1644 || err.code === 'ER_SIGNAL_EXCEPTION')) {
+      console.warn('[warn] SIGNAL (idempotent):', err.message);
     } else {
       throw err;
     }
   }
 
   saveCallbackSnapshot(orderId, data); // non-blocking
-  console.log("[cb] handler done");
+  console.log('[cb] handler done');
 }
 
-app.post("/midtrans-callback", async (req, res) => {
+app.post('/midtrans-callback', async (req, res) => {
   const data = req.body;
 
-  console.log("Callback Success Socket");
+  console.log('Callback Success Socket');
 
-  if (data.status == "PAID") {
+  if (data.status == 'PAID') {
     // Get User ID
     var orders = await getUserIdByCompany(data.order_id);
 
-    const userId = orders.length == 0 ? "" : orders[0].user_id;
-    const projectId = orders.length == 0 ? "" : orders[0].project_id;
+    const userId = orders.length == 0 ? '' : orders[0].user_id;
+    const projectId = orders.length == 0 ? '' : orders[0].project_id;
 
     if (userId && connectedUsers[userId]) {
       const socketId = connectedUsers[userId];
-      io.to(socketId).emit("payment-update", data);
+      io.to(socketId).emit('payment-update', data);
       console.log(`Sent update to user ${userId}`);
     } else {
-      console.log("User not connected or user_id missing");
+      console.log('User not connected or user_id missing');
     }
 
     // Update Order "PAID"
@@ -366,10 +347,10 @@ app.post("/midtrans-callback", async (req, res) => {
     await UpdateInboxPaid(projectId);
   }
 
-  res.status(200).send("OK");
+  res.status(200).send('OK');
 });
 
-app.post("/inbox-store", jwtF, async (req, res) => {
+app.post('/inbox-store', jwtF, async (req, res) => {
   const {
     title,
     content,
@@ -385,27 +366,27 @@ app.post("/inbox-store", jwtF, async (req, res) => {
   const userId = req.decoded.id;
 
   try {
-    if (!title) throw new Error("Field type title is required");
-    if (!content) throw new Error("Field content is required");
-    if (!receiver_id) throw new Error("Field receiver_id is required");
+    if (!title) throw new Error('Field type title is required');
+    if (!content) throw new Error('Field content is required');
+    if (!receiver_id) throw new Error('Field receiver_id is required');
 
     // --- normalize field_1 (divide by 2 if numeric, else keep null/empty) ---
     let field1Parse = null;
-    if (field_1 !== "" && typeof field_1 !== "undefined") {
+    if (field_1 !== '' && typeof field_1 !== 'undefined') {
       const parsed = parseInt(field_1, 10);
-      if (Number.isNaN(parsed)) throw new Error("field_1 harus berupa angka");
+      if (Number.isNaN(parsed)) throw new Error('field_1 harus berupa angka');
       field1Parse = Math.floor(parsed / 2);
     }
 
     // --- normalize data: accept object or JSON string ---
     let dataObj = null;
-    if (typeof data === "string" && data.trim() !== "") {
+    if (typeof data === 'string' && data.trim() !== '') {
       try {
         dataObj = JSON.parse(data); // client sent stringified JSON
       } catch {
-        throw new Error("data must be valid JSON");
+        throw new Error('data must be valid JSON');
       }
-    } else if (data && typeof data === "object") {
+    } else if (data && typeof data === 'object') {
       dataObj = data; // client sent an object
     }
 
@@ -428,23 +409,51 @@ app.post("/inbox-store", jwtF, async (req, res) => {
     };
 
     switch (field_4) {
-      case "ktp":
-      case "ktp-pic": {
+      // -------------------------
+      // DOKUMEN PERJABATAN (orang)
+      // -------------------------
+      case 'slip-gaji':
+      case 'surat-kuasa':
+      case 'upload-ktp':
+      case 'upload-npwp': {
         await ResetVal({ field_4, receiver_id });
+        break;
       }
-      default:
+
+      // -------------------------
+      // DOKUMEN PERUSAHAAN
+      // -------------------------
+      case 'akta-perubahan-terakhir':
+      case 'akta-pendirian-perusahaan':
+      case 'sk-pendirian-perusahaan':
+      case 'sk-kumham-path':
+      case 'npwp-perusahaan':
+      case 'siup':
+      case 'tdp':
+      case 'nib':
+      case 'sk-kumham-pendirian':
+      case 'sk-kumham-terakhir':
+      case 'laporan-keuangan':
+      case 'rekening-koran': {
+        await ResetVal({ field_4, receiver_id });
+        break;
+      }
+
+      default: {
+        break;
+      }
     }
 
     await StoreInbox(dataInbox);
 
     if (receiver_id && connectedUsers[receiver_id]) {
-      io.to(connectedUsers[receiver_id]).emit("inbox-update", dataObj);
+      io.to(connectedUsers[receiver_id]).emit('inbox-update', dataObj);
       console.log(`Sent update to user ${receiver_id}`);
     } else {
-      console.log("User not connected or user_id missing");
+      console.log('User not connected or user_id missing');
     }
 
-    response(res, 200, false, "", {
+    response(res, 200, false, '', {
       title,
       content,
       field1: field1Parse,
@@ -462,7 +471,7 @@ app.post("/inbox-store", jwtF, async (req, res) => {
   }
 });
 
-app.post("/order", jwtF, async (req, res) => {
+app.post('/order', jwtF, async (req, res) => {
   const { project_id, payment_method, price } = req.body;
 
   const userId = req.decoded.id;
@@ -470,7 +479,7 @@ app.post("/order", jwtF, async (req, res) => {
   try {
     if (!project_id) throw new Error("Field 'project_id' is required.");
     if (!payment_method) throw new Error("Field 'payment_method' is required.");
-    if (typeof price === "undefined" || isNaN(price))
+    if (typeof price === 'undefined' || isNaN(price))
       throw new Error("Field 'price' is required and must be a number.");
 
     // Get Last Invoice
@@ -484,14 +493,12 @@ app.post("/order", jwtF, async (req, res) => {
 
     // Generate random 5-digit number
     const randomNumber = Math.floor(Math.random() * 100000);
-    const invoice = `CAPBRIDGE-INV${counterNumber}-${String(
-      randomNumber
-    ).padStart(5, "0")}`;
+    const invoice = `CAPBRIDGE-INV${counterNumber}-${String(randomNumber).padStart(5, '0')}`;
 
     // Get Project
     var projects = await getProject(project_id);
 
-    if (projects.length == 0) throw new Error("PROJECT_NOT_FOUND");
+    if (projects.length == 0) throw new Error('PROJECT_NOT_FOUND');
 
     var projectUserId = projects[0].user_id;
     var projectTitle = projects[0].title;
@@ -505,7 +512,7 @@ app.post("/order", jwtF, async (req, res) => {
     var paymentType;
     var paymentExpire;
 
-    if (payment_method != "billing") {
+    if (payment_method != 'billing') {
       // Get List Payment Method
       var paymentMethods = await listPaymentMethod(payment_method);
 
@@ -529,12 +536,12 @@ app.post("/order", jwtF, async (req, res) => {
         channel_id: payment_method,
         orderId: invoice,
         amount: parseInt(price), // Don't forget to parseInt for avoid anomaly midtrans
-        app: "CAPBRIDGE",
+        app: 'CAPBRIDGE',
         callbackUrl: process.env.CALLBACK_URL,
       };
 
       const config = {
-        method: "POST",
+        method: 'POST',
         url: process.env.PAY_MIDTRANS,
         data: payload,
       };
@@ -544,24 +551,22 @@ app.post("/order", jwtF, async (req, res) => {
       // Store Order
       await storeOrder(dataOrder);
 
-      if (["4"].includes(payment_method)) {
+      if (['4'].includes(payment_method)) {
         paymentAccess = result.data.data.data.actions[0].url;
-        paymentType = "emoney";
+        paymentType = 'emoney';
         paymentExpire = moment()
-          .tz("Asia/Jakarta")
-          .add(30, "minutes")
-          .format("YYYY-MM-DD HH:mm:ss");
+          .tz('Asia/Jakarta')
+          .add(30, 'minutes')
+          .format('YYYY-MM-DD HH:mm:ss');
       } else {
         paymentAccess = result.data.data.data.vaNumber;
-        paymentType = "va";
+        paymentType = 'va';
         paymentExpire = result.data.data.expire;
       }
 
       var dataInboxOrder = {
-        Title: "Proyek [" + projectTitle + "]",
-        Content:
-          "Silahkan melakukan pembayaran lebih lanjut sebesar " +
-          formatCurrency(price),
+        Title: 'Proyek [' + projectTitle + ']',
+        Content: 'Silahkan melakukan pembayaran lebih lanjut sebesar ' + formatCurrency(price),
         field_1: paymentName,
         field_2: paymentFee,
         field_3: paymentAccess,
@@ -572,15 +577,15 @@ app.post("/order", jwtF, async (req, res) => {
         field_8: project_id,
         user_id: userId,
         receiver_id: projectUserId,
-        type: "2",
+        type: '2',
       };
 
       if (projectUserId && connectedUsers[projectUserId]) {
         const socketId = connectedUsers[projectUserId];
-        io.to(socketId).emit("payment-update", dataInboxOrder);
+        io.to(socketId).emit('payment-update', dataInboxOrder);
         console.log(`Sent update to user ${projectUserId}`);
       } else {
-        console.log("User not connected or user_id missing");
+        console.log('User not connected or user_id missing');
       }
 
       // Store Order Inbox
@@ -589,7 +594,7 @@ app.post("/order", jwtF, async (req, res) => {
       inboxId = inboxIdResult;
     }
 
-    response(res, 200, false, "", {
+    response(res, 200, false, '', {
       price: price,
       invoice: invoice,
       payment: {
