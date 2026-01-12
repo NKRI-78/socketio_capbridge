@@ -249,7 +249,7 @@ module.exports = {
         // -------------------------
         case "upload-ktp-pic": {
           query = `
-      UPDATE ktps
+      UPDATE profiles
       SET photo_ktp = NULL
       WHERE user_id = ?
     `;
