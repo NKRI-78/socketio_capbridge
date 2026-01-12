@@ -235,6 +235,205 @@ module.exports = {
     });
   },
 
+  ResetVal: (data) => {
+    return new Promise((resolve, reject) => {
+      const field_4 = data.field_4;
+      const receiver_id = data.receiver_id;
+
+      let query = "";
+      let params = [];
+
+      switch (field_4) {
+        // -------------------------
+        // DOKUMEN USER
+        // -------------------------
+        case "upload-ktp-pic": {
+          query = `
+      UPDATE profiles
+      SET photo_ktp = NULL
+      WHERE user_id = ?
+    `;
+          params = [receiver_id];
+          break;
+        }
+        // -------------------------
+        // DOKUMEN PERJABATAN (orang)
+        // -------------------------
+        case "slip-gaji": {
+          query = `
+      UPDATE pay_slips
+      SET path = NULL
+      WHERE user_id = ? 
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "upload-ktp": {
+          query = `
+      UPDATE ktps
+      SET path = NULL
+      WHERE user_id = ?
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "upload-npwp": {
+          query = `
+      UPDATE jobs
+      SET npwp_path = NULL
+      WHERE user_id = ?
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "surat-kuasa": {
+          query = `
+      UPDATE additional_docs
+      SET path = NULL
+      WHERE user_id = ? AND type = 'surat-kuasa'
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        // -------------------------
+        // DOKUMEN PERUSAHAAN
+        // -------------------------
+        case "akta-perubahan-terakhir": {
+          query = `
+      UPDATE companies
+      SET latest_amendment_deed_path = NULL
+      WHERE user_id = ?
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "akta-pendirian-perusahaan": {
+          query = `
+      UPDATE companies
+      SET deed_of_incorporation = NULL
+      WHERE user_id = ?
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "sk-pendirian-perusahaan": {
+          query = `
+      UPDATE companies
+      SET certificate_of_company_est = NULL
+      WHERE user_id = ?
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "sk-kumham-path": {
+          query = `
+      UPDATE companies
+      SET sk_kumham_path = NULL
+      WHERE user_id = ?
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "npwp-perusahaan": {
+          query = `
+      UPDATE companies
+      SET npwp_path = NULL
+      WHERE user_id = ?
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "siup": {
+          query = `
+      UPDATE companies
+      SET siup = NULL
+      WHERE user_id = ?
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "tdp": {
+          query = `
+      UPDATE companies
+      SET tdp = NULL
+      WHERE user_id = ? 
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "nib": {
+          query = `
+      UPDATE companies
+      SET company_nib_path = NULL
+      WHERE user_id = ? 
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "sk-kumham-pendirian": {
+          query = `
+      UPDATE companies
+      SET sk_kumham = NULL
+      WHERE user_id = ? 
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "sk-kumham-terakhir": {
+          query = `
+      UPDATE companies
+      SET sk_kumham_last = NULL
+      WHERE user_id = ? 
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "laporan-keuangan": {
+          query = `
+      UPDATE companies
+      SET financial_statement = NULL
+      WHERE user_id = ? 
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        case "rekening-koran": {
+          query = `
+      UPDATE companies
+      SET bank_statement = NULL
+      WHERE user_id = ? 
+    `;
+          params = [receiver_id];
+          break;
+        }
+
+        default: {
+          return resolve({ affectedRows: 0, message: "No action for field_4" });
+        }
+      }
+
+      connCreate.query(query, params, (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+  },
+
   UpdateOrderPaid: (invoice) => {
     return new Promise((resolve, reject) => {
       var query = `UPDATE orders SET status = 4 WHERE invoice = ?`;

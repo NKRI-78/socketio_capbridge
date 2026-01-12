@@ -2,12 +2,15 @@ require("dotenv/config");
 
 const mysql = require("mysql2");
 
+const env = process.env.NODE_ENV;
+const isProd = env === "production";
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
+  database: isProd ? process.env.DB_NAME : process.env.DB_NAME_STAGING,
 });
 
 const conn = pool.promise();
@@ -17,7 +20,7 @@ const connCreate = mysql.createConnection({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
+  database: isProd ? process.env.DB_NAME : process.env.DB_NAME_STAGING,
 });
 
 const connPayment = mysql.createConnection({
@@ -36,13 +39,4 @@ const connBot = mysql.createConnection({
   database: process.env.DB_BOT,
 });
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
-module.exports = { conn, connCreate, connPayment, connBot, formatCurrency };
+module.exports = { conn, connCreate, connPayment, connBot };

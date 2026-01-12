@@ -21,9 +21,10 @@ const {
   loginBotSecret,
   askBotSecret,
   answerBotSecret,
+  ResetVal,
 } = require("./model");
 const { response } = require("./response");
-const { jwtF, decodeToken } = require("./jwt");
+const { jwtF } = require("./jwt");
 const { formatCurrency } = require("./config");
 const { checkPasswordEncrypt } = require("./utils");
 
@@ -426,9 +427,45 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       data: dataJsonString, // <- STRING ready for DB
     };
 
-    await StoreInbox(dataInbox); // make sure StoreInbox inserts this string into the column
+    switch (field_4) {
+      // -------------------------
+      // DOKUMEN PERJABATAN (orang)
+      // -------------------------
+      case "slip-gaji":
+      case "surat-kuasa":
+      case "upload-ktp":
+      case "upload-ktp-pic":
+      case "upload-npwp": {
+        await ResetVal({ field_4, receiver_id });
+        break;
+      }
 
-    // Send object (not the string) over socket so clients don’t have to parse
+      // -------------------------
+      // DOKUMEN PERUSAHAAN
+      // -------------------------
+      case "akta-perubahan-terakhir":
+      case "akta-pendirian-perusahaan":
+      case "sk-pendirian-perusahaan":
+      case "sk-kumham-path":
+      case "npwp-perusahaan":
+      case "siup":
+      case "tdp":
+      case "nib":
+      case "sk-kumham-pendirian":
+      case "sk-kumham-terakhir":
+      case "laporan-keuangan":
+      case "rekening-koran": {
+        await ResetVal({ field_4, receiver_id });
+        break;
+      }
+
+      default: {
+        break;
+      }
+    }
+
+    await StoreInbox(dataInbox);
+
     if (receiver_id && connectedUsers[receiver_id]) {
       io.to(connectedUsers[receiver_id]).emit("inbox-update", dataObj);
       console.log(`Sent update to user ${receiver_id}`);
@@ -444,12 +481,12 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       field3: field_3,
       field4: field_4,
       field5: field_5,
-      data: dataObj, // return as object to API consumers
+      data: dataObj,
       user_id: userId,
       receiver_id,
     });
   } catch (e) {
-    console.log(e)
+    console.log(e);
     response(res, 400, true, e.message);
   }
 });
