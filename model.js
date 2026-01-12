@@ -239,10 +239,23 @@ module.exports = {
     return new Promise((resolve, reject) => {
       const field_4 = data.field_4;
       const field_5 = data.field_5;
+      const field_6 = data.field_6;
       const receiver_id = data.receiver_id;
 
       let query = "";
       let params = [];
+
+      switch (field_6) {
+        case "upload-ktp": {
+          query = `
+      UPDATE positions
+      SET ktp_path = NULL
+      WHERE id = ?
+    `;
+          params = [field_5];
+          break;
+        }
+      }
 
       switch (field_4) {
         // -------------------------
@@ -267,16 +280,6 @@ module.exports = {
       WHERE user_id = ? 
     `;
           params = [receiver_id];
-          break;
-        }
-
-        case "upload-ktp": {
-          query = `
-      UPDATE positions
-      SET ktp_path = NULL
-      WHERE id = ?
-    `;
-          params = [field_5];
           break;
         }
 
