@@ -238,6 +238,7 @@ module.exports = {
   ResetVal: (data) => {
     return new Promise((resolve, reject) => {
       const field_4 = data.field_4;
+      const field_5 = data.field_5;
       const receiver_id = data.receiver_id;
 
       let query = "";
@@ -253,9 +254,6 @@ module.exports = {
       SET path = NULL
       WHERE user_id = ?
     `;
-          console.log(
-            `[upload-ktp-pic] receiver_id nya ${receiver_id} - dan query nya ${query}`
-          );
           params = [receiver_id];
           break;
         }
@@ -274,14 +272,11 @@ module.exports = {
 
         case "upload-ktp": {
           query = `
-      UPDATE ktps
-      SET path = NULL
-      WHERE user_id = ?
+      UPDATE positions
+      SET ktp_path = NULL
+      WHERE id = ?
     `;
-          console.log(
-            `[upload-ktp] receiver_id nya ${receiver_id} - dan query nya ${query}`
-          );
-          params = [receiver_id];
+          params = [field_5];
           break;
         }
 
