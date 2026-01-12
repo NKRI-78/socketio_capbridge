@@ -245,16 +245,18 @@ module.exports = {
       let query = "";
       let params = [];
 
-      switch (field_6) {
-        case "upload-ktp": {
-          query = `
+      if (field_6 == "upload-ktp") {
+        query = `
       UPDATE positions
       SET ktp_path = NULL
       WHERE id = ?
     `;
-          params = [field_5];
-          break;
-        }
+        params = [field_5];
+
+        connCreate.query(query, params, (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
+        });
       }
 
       switch (field_4) {
@@ -430,7 +432,6 @@ module.exports = {
           return resolve({ affectedRows: 0, message: "No action for field_4" });
         }
       }
-
       connCreate.query(query, params, (err, result) => {
         if (err) return reject(err);
         resolve(result);
