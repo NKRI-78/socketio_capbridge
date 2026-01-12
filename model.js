@@ -253,6 +253,7 @@ module.exports = {
       SET photo_ktp = NULL
       WHERE user_id = ?
     `;
+          console.log("QUERY NYA = ", query);
           params = [receiver_id];
           break;
         }
