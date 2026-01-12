@@ -252,8 +252,6 @@ module.exports = {
       SET ktp_path = NULL
       WHERE id = ?
     `;
-          console.log(field_5);
-          console.log(query);
           params = [field_5];
           break;
         }

@@ -429,8 +429,6 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       data: dataJsonString,
     };
 
-    console.log(req.body);
-
     switch (field_6) {
       case "upload-ktp": {
         await ResetVal({ field_4, field_5, field_6, receiver_id });
@@ -495,7 +493,7 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       field3: field_3,
       field4: field_4,
       field5: field_5,
-      field_6: field_6,
+      field6: field_6,
       data: dataObj,
       user_id: userId,
       receiver_id,
