@@ -429,6 +429,20 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       data: dataJsonString, // <- STRING ready for DB
     };
 
+    switch (field_6) {
+      // -------------------------
+      // DOKUMEN PERJABATAN (orang)
+      // -------------------------
+      case "upload-ktp": {
+        await ResetVal({ field_4, field_5, field_6, receiver_id });
+        break;
+      }
+
+      default: {
+        break;
+      }
+    }
+
     switch (field_4) {
       // -------------------------
       // DOKUMEN PERJABATAN (orang)
@@ -483,6 +497,7 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       field3: field_3,
       field4: field_4,
       field5: field_5,
+      field_6: field_6,
       data: dataObj,
       user_id: userId,
       receiver_id,
