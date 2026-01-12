@@ -249,11 +249,13 @@ module.exports = {
         // -------------------------
         case "upload-ktp-pic": {
           query = `
-      UPDATE profiles
+      UPDATE ktps
       SET photo_ktp = NULL
       WHERE user_id = ?
     `;
-          console.log("QUERY NYA = ", query);
+          console.log(
+            `[upload-ktp-pic] receiver_id nya ${receiver_id} - dan query nya ${query}`
+          );
           params = [receiver_id];
           break;
         }
@@ -276,6 +278,9 @@ module.exports = {
       SET path = NULL
       WHERE user_id = ?
     `;
+          console.log(
+            `[upload-ktp] receiver_id nya ${receiver_id} - dan query nya ${query}`
+          );
           params = [receiver_id];
           break;
         }
