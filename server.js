@@ -378,6 +378,7 @@ app.post("/inbox-store", jwtF, async (req, res) => {
     field_3,
     field_4,
     field_5,
+    field_6,
     data, // can be object OR a JSON string
     receiver_id,
   } = req.body;
@@ -424,6 +425,7 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       field3: field_3 ?? null,
       field4: field_4 ?? null,
       field5: field_5 ?? null,
+      field_6: field_6 ?? null,
       data: dataJsonString, // <- STRING ready for DB
     };
 
@@ -436,7 +438,7 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       case "upload-ktp":
       case "upload-ktp-pic":
       case "upload-npwp": {
-        await ResetVal({ field_4, receiver_id });
+        await ResetVal({ field_4, field_5, field_6, receiver_id });
         break;
       }
 
@@ -455,7 +457,7 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       case "sk-kumham-terakhir":
       case "laporan-keuangan":
       case "rekening-koran": {
-        await ResetVal({ field_4, receiver_id });
+        await ResetVal({ field_4, field_5, field_6, receiver_id });
         break;
       }
 
