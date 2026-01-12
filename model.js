@@ -249,8 +249,8 @@ module.exports = {
         // -------------------------
         case "upload-ktp-pic": {
           query = `
-      UPDATE profiles
-      SET photo_ktp = NULL
+      UPDATE ktps
+      SET path = NULL
       WHERE user_id = ?
     `;
           console.log(
