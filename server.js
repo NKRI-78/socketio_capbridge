@@ -435,6 +435,11 @@ app.post("/inbox-store", jwtF, async (req, res) => {
         break;
       }
 
+      case "upload-npwp": {
+        await ResetVal({ field_4, field_5, field_6, receiver_id });
+        break;
+      }
+
       default: {
         break;
       }
