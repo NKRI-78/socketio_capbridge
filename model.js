@@ -332,13 +332,17 @@ module.exports = {
         }
 
         case "upload-npwp": {
-          query = `
-          UPDATE jobs
-          SET npwp_path = NULL
-          WHERE user_id = ?
-        `;
-          params = [receiver_id];
-          break;
+          const q1 = `
+            UPDATE jobs
+            SET npwp_path = NULL
+            WHERE user_id = ?
+          `;
+          const q2 = `
+            UPDATE companies
+            SET npwp_path = NULL
+            WHERE user_id = ?
+          `;
+          return runTransaction2(q1, [receiver_id], q2, [receiver_id]);
         }
 
         case "surat-kuasa": {
@@ -437,7 +441,7 @@ module.exports = {
         case "sk-kumham-pendirian": {
           query = `
           UPDATE companies
-          SET sk_kumham = NULL
+          SET sk_kumham_path = NULL
           WHERE user_id = ?
         `;
           params = [receiver_id];
