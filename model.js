@@ -361,7 +361,7 @@ module.exports = {
         case "akta-perubahan-terakhir": {
           query = `
           UPDATE companies
-          SET latest_amendment_deed_path = NULL
+          SET latest_amendment_deed = NULL
           WHERE user_id = ?
         `;
           params = [receiver_id];
