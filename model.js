@@ -237,70 +237,116 @@ module.exports = {
 
   ResetVal: (data) => {
     return new Promise((resolve, reject) => {
-      const field_4 = data.field_4;
-      const field_5 = data.field_5;
-      const field_6 = data.field_6;
-      const receiver_id = data.receiver_id;
+      const { field_4, field_5, field_6, receiver_id } = data;
 
+      // helper execute single query
+      const runQuery = (sql, params) => {
+        connCreate.query(sql, params, (err, result) => {
+          if (err) return reject(err);
+          return resolve(result);
+        });
+      };
+
+      // helper execute 2 queries in transaction
+      const runTransaction2 = (sql1, params1, sql2, params2) => {
+        connCreate.beginTransaction((err) => {
+          if (err) return reject(err);
+
+          connCreate.query(sql1, params1, (err, result1) => {
+            if (err) {
+              return connCreate.rollback(() => reject(err));
+            }
+
+            connCreate.query(sql2, params2, (err, result2) => {
+              if (err) {
+                return connCreate.rollback(() => reject(err));
+              }
+
+              connCreate.commit((err) => {
+                if (err) {
+                  return connCreate.rollback(() => reject(err));
+                }
+                return resolve({ result1, result2 });
+              });
+            });
+          });
+        });
+      };
+
+      // =========================
+      // PRIORITAS: field_6 actions
+      // =========================
+      if (field_6 === "upload-ktp") {
+        const sql = `
+        UPDATE positions
+        SET ktp_path = NULL
+        WHERE id = ?
+      `;
+        return runQuery(sql, [field_5]);
+      }
+
+      if (field_6 === "upload-npwp") {
+        const sql = `
+        UPDATE positions
+        SET npwp_path = NULL
+        WHERE id = ?
+      `;
+        return runQuery(sql, [field_5]);
+      }
+
+      // =========================
+      // field_4 actions
+      // =========================
       let query = "";
       let params = [];
-
-      if (field_6 == "upload-ktp") {
-        query = `
-      UPDATE positions
-      SET ktp_path = NULL
-      WHERE id = ?
-    `;
-        params = [field_5];
-
-        connCreate.query(query, params, (err, result) => {
-          if (err) return reject(err);
-          resolve(result);
-        });
-      }
 
       switch (field_4) {
         // -------------------------
         // DOKUMEN USER
         // -------------------------
         case "upload-ktp-pic": {
-          query = `
-      UPDATE ktps
-      SET path = NULL
-      WHERE user_id = ?
-    `;
-          params = [receiver_id];
-          break;
+          const q1 = `
+          UPDATE ktps
+          SET path = NULL
+          WHERE user_id = ?
+        `;
+          const q2 = `
+          UPDATE profiles
+          SET photo_ktp = NULL
+          WHERE user_id = ?
+        `;
+          return runTransaction2(q1, [receiver_id], q2, [receiver_id]);
         }
+
         // -------------------------
         // DOKUMEN PERJABATAN (orang)
         // -------------------------
         case "slip-gaji": {
           query = `
-      UPDATE pay_slips
-      SET path = NULL
-      WHERE user_id = ? 
-    `;
+          UPDATE pay_slips
+          SET path = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "upload-npwp": {
           query = `
-      UPDATE jobs
-      SET npwp_path = NULL
-      WHERE user_id = ?
-    `;
+          UPDATE jobs
+          SET npwp_path = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "surat-kuasa": {
           query = `
-      UPDATE additional_docs
-      SET path = NULL
-      WHERE user_id = ? AND type = 'surat-kuasa'
-    `;
+          UPDATE additional_docs
+          SET path = NULL
+          WHERE user_id = ? AND type = 'surat-kuasa'
+        `;
           params = [receiver_id];
           break;
         }
@@ -310,120 +356,120 @@ module.exports = {
         // -------------------------
         case "akta-perubahan-terakhir": {
           query = `
-      UPDATE companies
-      SET latest_amendment_deed_path = NULL
-      WHERE user_id = ?
-    `;
+          UPDATE companies
+          SET latest_amendment_deed_path = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "akta-pendirian-perusahaan": {
           query = `
-      UPDATE companies
-      SET deed_of_incorporation = NULL
-      WHERE user_id = ?
-    `;
+          UPDATE companies
+          SET deed_of_incorporation = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "sk-pendirian-perusahaan": {
           query = `
-      UPDATE companies
-      SET certificate_of_company_est = NULL
-      WHERE user_id = ?
-    `;
+          UPDATE companies
+          SET certificate_of_company_est = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "sk-kumham-path": {
           query = `
-      UPDATE companies
-      SET sk_kumham_path = NULL
-      WHERE user_id = ?
-    `;
+          UPDATE companies
+          SET sk_kumham_path = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "npwp-perusahaan": {
           query = `
-      UPDATE companies
-      SET npwp_path = NULL
-      WHERE user_id = ?
-    `;
+          UPDATE companies
+          SET npwp_path = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "siup": {
           query = `
-      UPDATE companies
-      SET siup = NULL
-      WHERE user_id = ?
-    `;
+          UPDATE companies
+          SET siup = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "tdp": {
           query = `
-      UPDATE companies
-      SET tdp = NULL
-      WHERE user_id = ? 
-    `;
+          UPDATE companies
+          SET tdp = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "nib": {
           query = `
-      UPDATE companies
-      SET company_nib_path = NULL
-      WHERE user_id = ? 
-    `;
+          UPDATE companies
+          SET company_nib_path = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "sk-kumham-pendirian": {
           query = `
-      UPDATE companies
-      SET sk_kumham = NULL
-      WHERE user_id = ? 
-    `;
+          UPDATE companies
+          SET sk_kumham = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "sk-kumham-terakhir": {
           query = `
-      UPDATE companies
-      SET sk_kumham_last = NULL
-      WHERE user_id = ? 
-    `;
+          UPDATE companies
+          SET sk_kumham_last = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "laporan-keuangan": {
           query = `
-      UPDATE companies
-      SET financial_statement = NULL
-      WHERE user_id = ? 
-    `;
+          UPDATE companies
+          SET financial_statement = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
 
         case "rekening-koran": {
           query = `
-      UPDATE companies
-      SET bank_statement = NULL
-      WHERE user_id = ? 
-    `;
+          UPDATE companies
+          SET bank_statement = NULL
+          WHERE user_id = ?
+        `;
           params = [receiver_id];
           break;
         }
@@ -432,10 +478,9 @@ module.exports = {
           return resolve({ affectedRows: 0, message: "No action for field_4" });
         }
       }
-      connCreate.query(query, params, (err, result) => {
-        if (err) return reject(err);
-        resolve(result);
-      });
+
+      // eksekusi single query untuk semua case di atas (kecuali yang sudah return)
+      return runQuery(query, params);
     });
   },
 
