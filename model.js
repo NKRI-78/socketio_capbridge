@@ -14,6 +14,23 @@ module.exports = {
       });
     });
   },
+  getTokenByUserId: (userId) => {
+    return new Promise((resolve, reject) => {
+      const query = `
+      SELECT token
+      FROM fcms
+      WHERE user_id = ?
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `;
+
+      connCreate.query(query, [userId], (err, rows) => {
+        if (err) return reject(err);
+
+        resolve(rows?.[0]?.token ?? "");
+      });
+    });
+  },
   askBotSecret: (data) => {
     return new Promise((resolve, reject) => {
       const query = `

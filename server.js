@@ -22,11 +22,12 @@ const {
   askBotSecret,
   answerBotSecret,
   ResetVal,
+  getTokenByUserId,
 } = require("./model");
 const { response } = require("./response");
 const { jwtF } = require("./jwt");
 const { formatCurrency } = require("./config");
-const { checkPasswordEncrypt } = require("./utils");
+const { checkPasswordEncrypt, sendFCM } = require("./utils");
 
 const app = express();
 const server = http.createServer(app);
@@ -489,6 +490,14 @@ app.post("/inbox-store", jwtF, async (req, res) => {
     } else {
       console.log("User not connected or user_id missing");
     }
+
+    var token = await getTokenByUserId(receiver_id);
+
+    await sendFCM(title, content, token, "upload-document", {
+      data: {
+        field_4: field_4,
+      },
+    });
 
     response(res, 200, false, "", {
       title,

@@ -13,4 +13,17 @@ module.exports = {
       maximumFractionDigits: 0,
     }).format(amount);
   },
+  sendFCM: async (title, body, token, type, data) => {
+    try {
+      await axios.post(process.env.FCM_URL, {
+        token: token,
+        title: title,
+        body: body,
+        broadcast_type: type,
+        field_4: data.field_4,
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  },
 };
