@@ -1,3 +1,4 @@
+const { default: axios } = require("axios");
 const bcrypt = require("bcryptjs");
 
 module.exports = {
@@ -15,7 +16,7 @@ module.exports = {
   },
   sendFCM: async (title, body, token, type, data) => {
     try {
-      await axios.post(process.env.FCM_URL, {
+      await axios.post(process.env.FCM_OFFICE_URL, {
         token: token,
         title: title,
         body: body,
