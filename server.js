@@ -493,11 +493,13 @@ app.post("/inbox-store", jwtF, async (req, res) => {
 
     var token = await getTokenByUserId(receiver_id);
 
-    await sendFCM(title, content, token, "upload-document", {
-      data: {
-        field_4: field_4,
-      },
-    });
+    var dataFcm = {
+      field_4: field_4,
+      field_5: field_5,
+      field_6: field_6,
+    };
+
+    await sendFCM(title, content, token, "upload-document", dataFcm);
 
     response(res, 200, false, "", {
       title,

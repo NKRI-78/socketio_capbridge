@@ -22,6 +22,8 @@ module.exports = {
         body: body,
         broadcast_type: type,
         field_4: data.field_4,
+        field_5: data.field_5,
+        field_6: data.field_6,
       });
     } catch (e) {
       console.log(e);
