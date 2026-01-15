@@ -21,9 +21,10 @@ module.exports = {
         title: title,
         body: body,
         broadcast_type: type,
-        field_4: data.field_4,
-        field_5: data.field_5,
-        field_6: data.field_6,
+        inbox_id: String(data.inbox_id),
+        field_4: String(data.field_4),
+        field_5: String(data.field_5),
+        field_6: String(data.field_6),
       });
     } catch (e) {
       console.log(e);

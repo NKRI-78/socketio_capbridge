@@ -247,7 +247,11 @@ module.exports = {
 
       connCreate.query(query, params, (err, result) => {
         if (err) return reject(err);
-        resolve(result);
+        resolve({
+          insertId: result.insertId,
+          affectedRows: result.affectedRows,
+          message: "Inbox created",
+        });
       });
     });
   },

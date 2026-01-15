@@ -482,7 +482,7 @@ app.post("/inbox-store", jwtF, async (req, res) => {
       }
     }
 
-    await StoreInbox(dataInbox);
+    const created = await StoreInbox(dataInbox);
 
     if (receiver_id && connectedUsers[receiver_id]) {
       io.to(connectedUsers[receiver_id]).emit("inbox-update", dataObj);
@@ -493,13 +493,12 @@ app.post("/inbox-store", jwtF, async (req, res) => {
 
     var token = await getTokenByUserId(receiver_id);
 
-    var dataFcm = {
+    await sendFCM(title, content, token, "upload-document", {
+      inbox_id: created.insertId,
       field_4: field_4,
       field_5: field_5,
       field_6: field_6,
-    };
-
-    await sendFCM(title, content, token, "upload-document", dataFcm);
+    });
 
     response(res, 200, false, "", {
       title,
